@@ -1,3 +1,3 @@
-sorry that "Çalışkan" is currently closed source. stay tuned for updates... 👀
+sorry that "Questor" is currently closed source. stay tuned for updates... 👀
 
-try “Çalışkan” 👉 https://caliskan.vercel.app (may not be released yet.. xD)
+try “Questor” 👉 https://search-questor.vercel.app/ (may not be released yet.. xD)
