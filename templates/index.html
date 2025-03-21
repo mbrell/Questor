@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search / Questor AI</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#5D5CDE',
+                            50: '#F3F3FD',
+                            100: '#E6E6FB',
+                            200: '#CDCCF7',
+                            300: '#B3B2F3',
+                            400: '#9A99EF',
+                            500: '#5D5CDE',
+                            600: '#4A49D9',
+                            700: '#3736D4',
+                            800: '#2C2BBE',
+                            900: '#2222A8'
+                        },
+                        slate: {
+                            850: '#172032'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Google Sans"', 'Roboto', 'sans-serif']
+                    },
+                    boxShadow: {
+                        'soft': '0 2px 10px rgba(0, 0, 0, 0.05)',
+                        'soft-lg': '0 4px 20px rgba(0, 0, 0, 0.08)'
+                    },
+                    animation: {
+                        'pulse-subtle': 'pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        'pulse-subtle': {
+                            '0%, 100%': { opacity: 1 },
+                            '50%': { opacity: 0.8 },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .search-container {
+            position: relative;
+            margin-bottom: 1px;
+            width: calc(100% + 2px);
+            margin-left: -1px;
+        }
+        #resultContainer {
+            margin-top: 12px;
+            transition: all 0.3s ease;
+        }
+        .search-input {
+            width: 100%;
+            padding: 14px 56px 14px 52px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            background-color: #fff;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        .dark .search-input {
+            border-color: rgba(75, 85, 99, 0.5);
+            background-color: rgba(55, 65, 81, 0.2);
+            color: #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .search-input:focus {
+            border-color: #5D5CDE;
+            box-shadow: 0 0 0 2px rgba(93, 92, 222, 0.3);
+            outline: none;
+        }
+        .logo {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 32px;
+            width: 32px;
+            user-select: none;
+            transition: transform 0.2s ease;
+            user-select: none;
+            cursor: pointer;
+        }
+        .search-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 38px;
+            width: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #5D5CDE;
+            color: #fff;
+            border-radius: 25%;
+            transition: all 0.2s ease;
+        }
+        .search-btn:hover {
+            background-color: #4A49D9;
+        }
+        .search-btn:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+        .search-input:focus + .logo {
+            transform: translateY(-50%) scale(1.1);
+        }
+        .loader {
+            margin: 32px 0;
+            text-align: center;
+            transition: opacity 0.3s ease;
+        }
+        .result-box {
+            padding: 12px 0 8px 0;
+            margin-bottom: 0;
+            background-color: transparent;
+            transition: all 0.3s ease;
+        }
+        .dark .result-box {
+            color: #e5e7eb;
+            background-color: transparent;
+        }
+        .web-results {
+            padding: 2px 0 12px 0;
+            background-color: transparent;
+            transition: all 0.3s ease;
+        }
+        .dark .web-results {
+            background-color: transparent;
+        }
+        .result-item {
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+            transition: transform 0.2s ease;
+        }
+        .result-item:hover {
+            transform: translateX(3px);
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        .result-title {
+            color: #1a0dab;
+            font-size: 16px;
+            margin-bottom: 6px;
+            text-decoration: none;
+            display: inline-block;
+            transition: color 0.2s ease;
+            font-weight: 500;
+        }
+        .dark .result-title {
+            color: #8ab4ff;
+        }
+        .result-title:hover {
+            text-decoration: underline;
+        }
+        .result-url {
+            color: #006621;
+            font-size: 13px;
+            margin-bottom: 6px;
+            word-break: break-all;
+        }
+        .dark .result-url {
+            color: #3cba54;
+        }
+        .result-snippet {
+            color: #545454;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .dark .result-snippet {
+            color: #bdc1c6;
+        }
+        footer {
+            margin-top: 4px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            color: #9ca3af;
+            padding: 0 4px;
+        }
+        footer a {
+            color: #9ca3af;
+            transition: color 0.2s ease;
+        }
+        footer a:hover {
+            color: #5D5CDE;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 640px) {
+            .search-input {
+                padding-left: 46px;
+                font-size: 16px;
+            }
+            .logo {
+                left: 10px;
+                height: 24px;
+                width: 24px;
+            }
+        }
+        
+        pre.hljs {
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            overflow-x: auto;
+        }
+        .dark pre.hljs {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        #searchResult h1, #searchResult h2, #searchResult h3 {
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            font-weight: 600;
+        }
+        #searchResult h1 {
+            font-size: 1.5rem;
+            border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+            padding-bottom: 0.3em;
+        }
+        #searchResult h2 {
+            font-size: 1.3rem;
+        }
+        #searchResult h3 {
+            font-size: 1.1rem;
+        }
+        #searchResult p {
+            margin-bottom: 1em;
+            line-height: 1.6;
+        }
+        #searchResult ul, #searchResult ol {
+            margin-bottom: 1em;
+            padding-left: 2em;
+        }
+        #searchResult li {
+            margin-bottom: 0.5em;
+        }
+        #searchResult a {
+            color: #5D5CDE;
+            text-decoration: none;
+        }
+        #searchResult a:hover {
+            text-decoration: underline;
+        }
+        .dark #searchResult a {
+            color: #8ab4ff;
+        }
+        
+        #webResultsContainer {
+            margin-top: 0;
+            padding-top: 0;
+        }
+        
+        #searchResult p:last-child {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-slate-850 font-sans text-gray-800 dark:text-gray-200">
+    <main class="w-full max-w-3xl mx-auto">
+        <div class="search-container mb-4">
+            <input 
+                type="text" 
+                id="searchInput" 
+                class="search-input" 
+                placeholder="What do you want to search or research?"
+                aria-label="Search"
+            >
+            <a href="/">
+                <img src="static/questor.svg" alt="Logo" class="logo">
+            </a>
+            <button id="searchButton" class="search-btn" aria-label="Search">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+        <div id="loader" class="loader hidden">
+            <svg class="animate-spin h-8 w-8 text-primary-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+        <div id="resultContainer" class="hidden">
+            <div id="searchResult" class="result-box"></div>
+        </div>
+        <div id="webResultsContainer" class="hidden">
+            <div id="webResults" class="web-results"></div>
+        </div>
+        <footer class="fixed bottom-1 right-0 py-3 px-4 bg-white dark:bg-slate-850">
+            <a href="https://ufuk.bearblog.dev/sartlar/" target="_blank" rel="noopener noreferrer" class="text-gray-500 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 transition-colors">Terms & Privacy Policy</a>
+        </footer>
+        <footer class="fixed bottom-8 right-0 py-3 px-4 bg-white dark:bg-slate-850">
+            <a href="https://github.com/mbrell/" target="_blank" rel="noopener noreferrer" class="text-gray-500 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 transition-colors">GitHub</a>
+        </footer>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.1/markdown-it.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('searchInput');
+            const searchButton = document.getElementById('searchButton');
+            const resultContainer = document.getElementById('resultContainer');
+            const searchResult = document.getElementById('searchResult');
+            const webResultsContainer = document.getElementById('webResultsContainer');
+            const webResults = document.getElementById('webResults');
+            const loader = document.getElementById('loader');
+
+            searchInput.focus();
+
+            const md = window.markdownit({
+                html: false,
+                linkify: true,
+                typographer: true,
+                highlight: (str, lang) => {
+                    if (lang && hljs.getLanguage(lang)) {
+                        try {
+                            return `<pre class="hljs"><code>${hljs.highlight(str, { language: lang, ignoreIllegals: true }).value}</code></pre>`;
+                        } catch (e) {}
+                    }
+                    return `<pre class="hljs"><code>${md.utils.escapeHtml(str)}</code></pre>`;
+                }
+            });
+
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') performSearch();
+            });
+
+            searchButton.addEventListener('click', performSearch);
+
+            function performSearch() {
+                const query = searchInput.value.trim();
+                if (!query) return;
+                
+                loader.classList.remove('hidden');
+
+                fetch('/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    loader.classList.add('hidden');
+
+                    if (data.result) {
+                        searchResult.innerHTML = md.render(data.result);
+                        resultContainer.classList.remove('hidden');
+                        searchResult.classList.add('fade-in');
+                        document.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+                    } else {
+                        resultContainer.classList.add('hidden');
+                    }
+
+                    if (data.search_results && data.search_results.length > 0) {
+                        webResults.innerHTML = '';
+                        displaySearchResults(data.search_results);
+                        webResultsContainer.classList.remove('hidden');
+                        webResultsContainer.classList.add('fade-in');
+                    } else {
+                        webResultsContainer.classList.add('hidden');
+                    }
+                })
+                .catch(error => {
+                    loader.classList.add('hidden');
+                    
+                    searchResult.innerHTML = `<div class="p-4 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-200 rounded-md">Hata: ${error.message}</div>`;
+                    resultContainer.classList.remove('hidden');
+                    searchResult.classList.add('fade-in');
+                    
+                    webResultsContainer.classList.add('hidden');
+                });
+            }
+
+            function displaySearchResults(results) {
+                webResults.innerHTML = '';
+                results.forEach((result, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'result-item';
+                    div.style.animationDelay = `${index * 0.05}s`;
+                    div.classList.add('fade-in');
+
+                    const title = document.createElement('a');
+                    title.className = 'result-title block';
+                    title.href = result.href;
+                    title.target = '_blank';
+                    title.textContent = result.title;
+
+                    const url = document.createElement('div');
+                    url.className = 'result-url';
+                    const urlObj = new URL(result.href);
+                    url.textContent = urlObj.hostname + urlObj.pathname;
+
+                    const snippet = document.createElement('div');
+                    snippet.className = 'result-snippet';
+                    snippet.textContent = result.body;
+
+                    div.appendChild(title);
+                    div.appendChild(url);
+                    div.appendChild(snippet);
+                    webResults.appendChild(div);
+                });
+            }
+
+            function setTheme() {
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            }
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', setTheme);
+            setTheme();
+        });
+    </script>
+
+</body>
+</html>
